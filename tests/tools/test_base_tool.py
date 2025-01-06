@@ -1,7 +1,5 @@
-from typing import Callable
-
 from crewai.tools import BaseTool, tool
-
+from typing import Callable, Dict, List
 
 def test_creating_a_tool_using_annotation():
     @tool("Name of my tool")
@@ -36,7 +34,6 @@ def test_creating_a_tool_using_annotation():
         converted_tool.func("What is the meaning of life?")
         == "What is the meaning of life?"
     )
-
 
 def test_creating_a_tool_using_baseclass():
     class MyCustomTool(BaseTool):
@@ -74,7 +71,6 @@ def test_creating_a_tool_using_baseclass():
         == "What is the meaning of life?"
     )
 
-
 def test_setting_cache_function():
     class MyCustomTool(BaseTool):
         name: str = "Name of my tool"
@@ -88,7 +84,6 @@ def test_setting_cache_function():
     # Assert all the right attributes were defined
     assert not my_tool.cache_function()
 
-
 def test_default_cache_function_is_true():
     class MyCustomTool(BaseTool):
         name: str = "Name of my tool"
@@ -100,3 +95,35 @@ def test_default_cache_function_is_true():
     my_tool = MyCustomTool()
     # Assert all the right attributes were defined
     assert my_tool.cache_function()
+
+def test_tool_with_multiple_args_and_complex_return():
+    @tool("Complex Tool")
+    def complex_tool(name: str, age: int, is_student: bool) -> List[Dict[str, str]]:
+        """A tool that takes multiple arguments and returns a complex type."""
+        return [{"name": name, "status": f"{'Student' if is_student else 'Non-student'} aged {age}"}]
+
+    # Check if the tool attributes are correctly set
+    assert complex_tool.name == "Complex Tool"
+    assert "Tool Name: Complex Tool" in complex_tool.description
+    assert "name: {'description': None, 'type': 'str'}" in complex_tool.description
+    assert "age: {'description': None, 'type': 'int'}" in complex_tool.description
+    assert "is_student: {'description': None, 'type': 'bool'}" in complex_tool.description
+
+    # Check if the args_schema is correctly generated
+    schema = complex_tool.args_schema.model_json_schema()
+    assert schema["properties"] == {
+        "name": {"title": "Name", "type": "string"},
+        "age": {"title": "Age", "type": "integer"},
+        "is_student": {"title": "Is Student", "type": "boolean"}
+    }
+
+    # Test running the tool
+    result = complex_tool.run(name="Alice", age=25, is_student=True)
+    assert result == [{"name": "Alice", "status": "Student aged 25"}]
+
+    # Convert to structured tool and test
+    structured_tool = complex_tool.to_structured_tool()
+    assert structured_tool.name == "Complex Tool"
+    assert "Tool Name: Complex Tool" in structured_tool.description
+    structured_result = structured_tool.func(name="Bob", age=30, is_student=False)
+    assert structured_result == [{"name": "Bob", "status": "Non-student aged 30"}]
