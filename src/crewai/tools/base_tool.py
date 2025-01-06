@@ -18,7 +18,7 @@ from crewai.tools.structured_tool import CrewStructuredTool
 # Ignore all "PydanticDeprecatedSince20" warnings globally
 warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20)
 
-
+# run tests
 class BaseTool(BaseModel, ABC):
     class _ArgsSchemaPlaceholder(PydanticBaseModel):
         pass
